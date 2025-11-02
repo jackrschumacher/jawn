@@ -53,10 +53,16 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    
+    /* FIX: Changed justify-content to start (top) */
+    justify-content: flex-start; 
+    
+    /* FIX: Changed overflow to allow vertical scrolling */
+    overflow-y: auto; 
+    
     box-sizing: border-box;
     padding-top: 80px;
+    padding-bottom: 40px; /* Added padding for scroll breathing room */
 
     /* Subtle gradient animation for light mode */
     background-size: 400% 400%;
@@ -127,7 +133,7 @@ html.dark-mode #theme-toggle .icon-moon {
 @media (max-width: 768px) {
     body {
         padding-top: 80px;
-        overflow: auto; 
+        /* overflow: auto; -- Already set on body */
     }
     
     .icon-button {
@@ -162,6 +168,11 @@ html.dark-mode #theme-toggle .icon-moon {
     #copy-button {
         width: 36px;
         height: 36px;
+    }
+
+    /* FIX: Make results box smaller on mobile */
+    #results-placeholder {
+        min-height: 200px;
     }
 }
 
@@ -363,11 +374,15 @@ html.dark-mode #theme-toggle .icon-moon {
     display: none;
 }
 
+/* FIX: RESULTS BOX HEIGHT */
 #results-placeholder {
     display: block;
     width: 100%;
     box-sizing: border-box;
-    height: 480px;
+    
+    height: auto;       /* FIX: Allow height to grow */
+    min-height: 480px;  /* FIX: Keep the original height as a MINIMUM */
+    
     padding: 20px;
     border-radius: 8px;
     background-color: var(--container-bg);
@@ -383,6 +398,8 @@ html.dark-mode #theme-toggle .icon-moon {
     opacity: 0.5;
     font-style: italic;
 }
+
+/* DELETED: Removed redundant .results-box rule */
 
 .result-line {
     padding: 8px 0;
@@ -469,4 +486,23 @@ html.dark-mode body::before {
     100% {
         background-position: 0% 50%;
     }
+}
+
+/* --- 22. Completion Animation --- */
+@keyframes tada {
+    0% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px var(--jawn-color);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: none;
+    }
+}
+
+.animation-complete {
+    animation: tada 0.5s ease-out;
 }

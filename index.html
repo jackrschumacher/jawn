@@ -169,6 +169,15 @@
                     if (allResults.length > 0) {
                         copyButton.style.display = 'flex';
                     }
+
+                    // === COMPLETION ANIMATION ===
+                    // Trigger the completion animation
+                    resultsPlaceholder.classList.add('animation-complete');
+                    // Remove the class after the animation finishes
+                    setTimeout(() => {
+                        resultsPlaceholder.classList.remove('animation-complete');
+                    }, 600); 
+                    // ==========================
                 }
 
                 spinButton.addEventListener('click', function() {
