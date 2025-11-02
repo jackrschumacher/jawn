@@ -39,6 +39,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 /* 4. Style the main container */
