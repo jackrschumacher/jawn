@@ -16,6 +16,11 @@ Click nbfs://nbhost/SystemFileSystem/Templates/ClientSide/css.css to edit this t
     /* Wheel Colors */
     --jawn-color: #06b6d4; /* Cyan */
     --not-jawn-color: #f43f5e; /* Rose */
+    
+    /* Light mode gradient colors */
+    --gradient-1: #e0f7fa; /* Very light cyan */
+    --gradient-2: #ffebee; /* Very light rose */
+    --gradient-3: #f3e5f5; /* Very light purple */
 }
 
 /* 2. Define colors for Dark Mode using a class */
@@ -28,13 +33,17 @@ html.dark-mode {
     /* Wheel Colors */
     --jawn-color: #22d3ee; /* Brighter Cyan */
     --not-jawn-color: #fb7185; /* Brighter Rose */
+
+    /* Dot variables for dark mode */
+    --dot-color: hsl(200, 80%, 70%);
+    --dot-opacity: 0.3;
+    --dot-color-lightness: 70%;
 }
 
-/* 3. Apply colors and mobile-first styles (CENTERED) */
+/* 3. UPDATED: Apply subtle gradient background for light mode */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
-    background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
     min-height: 100vh;
@@ -46,38 +55,37 @@ body {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    box-sizing: border-box;
+    padding-top: 80px;
+
+    /* Subtle gradient animation for light mode */
+    background-size: 400% 400%;
+    background-image: linear-gradient(
+        135deg, 
+        var(--gradient-1) 0%, 
+        var(--gradient-2) 50%, 
+        var(--gradient-3) 100%
+    );
+    animation: moveSubtleGradient 20s ease-in-out infinite;
+    position: relative; /* For the dots */
 }
 
-/* 4. Style the main container */
-#jawn-box {
-    max-width: 900px;
-    width: 90%; /* Make it responsive */
-    margin: 20px 0; /* Vertical margin only */
-    padding: 20px;
-    background-color: var(--container-bg);
-    color: var(--text-color);
-    border-radius: 8px;
-    text-align: center;
-    font-size: 1.2rem;
-    transition: background-color 0.3s, color 0.3s;
-    user-select: none;
-    cursor: pointer;
-}
+/* (Sections 4-13 are unchanged) */
+/* ... */
+/* 4. Style the main container (COMMENTED OUT) */
+/*
+#jawn-box { ... }
+*/
 
-/* 5. Add the spinning animation class */
-#jawn-box.is-spinning {
-    animation: spin-only 0.5s linear;
-}
+/* 5. Add the spinning animation class (COMMENTED OUT) */
+/*
+#jawn-box.is-spinning { ... }
+*/
 
-/* 6. Add the keyframes for the spin-only animation */
-@keyframes spin-only {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
+/* 6. Add the keyframes for the spin-only animation (COMMENTED OUT) */
+/*
+@keyframes spin-only { ... }
+*/
 
 /* 7. REPLACED: Generic style for ALL icon buttons */
 .icon-button {
@@ -132,25 +140,21 @@ html.dark-mode #theme-toggle .icon-moon {
     display: block; /* Show moon in dark mode */
 }
 
-/* 11. UPDATED: Style for the click prompt (now inside jawn-box) */
-.click-prompt {
-    /* text-align is inherited from parent */
-    color: var(--text-color);
-    opacity: 0.7;
-    margin-top: 10px;
-    margin-bottom: 0; /* Remove default <p> margin */
-    font-style: italic;
-    font-size: 0.9rem; /* Make it a bit smaller */
-}
+/* 11. UPDATED: Style for the click prompt (COMMENTED OUT) */
+/*
+.click-prompt { ... }
+*/
 
 /* 12. UPDATED: Mobile Optimization */
-@media (max-width: 600px) {
-    #jawn-box {
-        margin: 10px;
-        padding: 15px;
+@media (max-width: 768px) { /* Increased breakpoint for tablets */
+    body {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 80px;
+        /* Allow scrolling on mobile if list is long */
+        overflow: auto; 
     }
-
-    /* Update both buttons for mobile */
+    
     .icon-button {
         top: 10px;
         width: 44px;
@@ -164,38 +168,96 @@ html.dark-mode #theme-toggle .icon-moon {
     #theme-toggle {
         right: 10px;
     }
+
+    /* --- NEW: Stack columns on mobile --- */
+    .main-content {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .column-left, .column-right {
+        width: 100%;
+        max-width: 400px; /* Constrain width on mobile */
+    }
+
+    .results-container {
+        margin-top: 20px; /* Add margin back */
+    }
+
+    /* Make wheel responsive */
+    #wheel {
+        width: 250px;
+        height: 250px;
+    }
+
+    .wheel-text {
+        padding-top: 20px;
+        font-size: 0.9rem; /* Fits "NOT JAWN" */
+    }
+    
+    #spin-button {
+        width: 80px;
+        height: 80px;
+        font-size: 1.1rem;
+        margin-top: -40px;
+    }
+    
+    #copy-button {
+        width: 36px;
+        height: 36px;
+    }
 }
 
-/* --- 13. UPDATED: Wheel of Jawn Styles --- */
+/* --- 13. NEW: Two-Column Layout Styles --- */
+.main-content {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    max-width: 900px; /* Max width of the two columns */
+    justify-content: space-between;
+    align-items: flex-start; /* Align columns to the top */
+}
+
+.column-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-basis: 48%; /* Each column takes up just under half */
+}
+
+.column-right {
+    flex-basis: 48%;
+}
+
+/* --- 14. UPDATED: Wheel of Jawn Styles --- */
 
 .wheel-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20px;
-    position: relative; /* For the pointer */
+    position: relative; 
+    /* margin-top: 60px; (Removed, now handled by body padding) */
 }
 
 .wheel-pointer {
     width: 0;
     height: 0;
-    /* Creates a triangle */
     border-left: 15px solid transparent;
     border-right: 15px solid transparent;
     border-top: 25px solid var(--text-color);
     z-index: 10;
     position: relative;
-    top: 5px; /* Sits just on top of the wheel's border */
+    top: 5px; 
     filter: drop-shadow(0 2px 1px rgba(0,0,0,0.2));
 }
 
 #wheel {
-    width: 500px; /* Made wheel slightly larger */
-    height: 500px;
+    /* --- UPDATED: Bigger desktop wheel --- */
+    width: 400px;
+    height: 400px;
     border-radius: 50%;
-    /* UPDATED: 8-slice gradient */
     background: conic-gradient(
-        from -22.5deg, /* Start 1/2 slice back to center pointer */
+        from -22.5deg, 
         var(--jawn-color) 0deg 45deg,
         var(--not-jawn-color) 45deg 90deg,
         var(--jawn-color) 90deg 135deg,
@@ -211,62 +273,301 @@ html.dark-mode #theme-toggle .icon-moon {
     overflow: hidden;
 }
 
-/* NEW: Styles for the 8 text labels */
 .wheel-text {
     position: absolute;
     width: 100%;
     height: 100%;
-    box-sizing: border-box; /* Include padding in height */
-    padding-top: 25px; /* Pushes text from center */
-    
-    /* Rotate each section into place */
+    box-sizing: border-box; 
+    /* --- UPDATED: Scaled for 400px wheel --- */
+    padding-top: 50px; 
     transform: rotate(calc(45deg * var(--i)));
-    
-    /* Text styles */
     text-align: center;
     user-select: none;
     color: #000;
     font-weight: bold;
-    font-size: 1rem;
+    /* --- UPDATED: Font size smaller to fit "NOT JAWN" --- */
+    font-size: 1.2rem;
     text-shadow: 0 1px 1px rgba(255,255,255,0.2);
 }
 
-/* DELETED: Old label styles */
-/* .jawn-label, .not-jawn-label { ... } */
+/* --- UPDATED: Prevents "NOT JAWN" from wrapping --- */
+.wheel-text span {
+    white-space: nowrap;
+}
 
 
-#spin-button {
-    margin-top: -40px; /* Sits on top of the wheel */
-    width: 80px;
-    height: 80px;
-    font-size: 1.1rem;
+/* --- 15. UPDATED: Input and Result Styles --- */
+
+.input-container {
+    width: 100%; /* Fill the column */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.input-container h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+#name-list-input {
+    width: 100%;
+    height: 100px;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid var(--container-bg);
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    resize: none; 
+}
+
+#name-list-input:focus {
+    outline: none;
+    border-color: var(--jawn-color);
+}
+
+.primary-button {
+    padding: 12px 30px;
+    font-size: 1.2rem;
     font-weight: bold;
     color: var(--button-text);
     background-color: var(--button-bg);
-    border: 5px solid var(--bg-color); /* Creates a "separate" look */
-    border-radius: 50%;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
     transition: transform 0.1s ease, opacity 0.2s;
-    z-index: 5; /* Sits below pointer, above wheel */
 }
 
-#spin-button:hover {
+.primary-button:hover {
     opacity: 0.8;
 }
 
-#spin-button:active {
+.primary-button:active {
     transform: scale(0.95);
 }
 
-#spin-button:disabled {
+.primary-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-#result-text {
-    margin-top: 30px; /* Give space from the button */
+.results-container {
+    width: 100%; /* Fill the column */
+    /* margin-top: 20px; (Not needed on desktop) */
+    text-align: left;
+    position: relative; /* For the copy button */
+}
+
+/* --- 16. NEW: Copy Button Styles --- */
+.results-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+#result-title {
     font-size: 1.5rem;
     font-weight: bold;
-    min-height: 1.5rem; /* Reserve space so layout doesn't jump */
+    min-height: 1.5rem; 
     text-align: center;
+    margin-bottom: 10px;
+}
+
+#copy-button {
+    position: absolute;
+    right: 0;
+    top: -5px;
+    width: 40px; /* Smaller than top buttons */
+    height: 40px;
+    
+    display: none; /* Hidden by default */
+}
+
+/* Icon visibility */
+#copy-button .icon-copied {
+    display: none;
+    font-size: 1.2rem;
+    color: var(--jawn-color);
+}
+#copy-button .icon-copy {
+    display: flex;
+    font-size: 1.2rem;
+}
+
+/* "Copied" state */
+#copy-button.copied .icon-copied {
+    display: flex;
+}
+#copy-button.copied .icon-copy {
+    display: none;
+}
+
+
+#results-placeholder {
+    display: block; /* Will be a block-level list */
+    width: 100%;
+    box-sizing: border-box;
+    height: 480px; /* Fixed height */
+    padding: 20px;
+    border-radius: 8px;
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    border: 2px dashed var(--button-bg);
+    overflow-y: auto; /* Scroll if content overflows */
+}
+
+#results-placeholder.is-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    font-style: italic;
+}
+
+.result-line {
+    padding: 8px 0;
+    font-size: 1.1rem;
+    border-bottom: 1px solid var(--button-bg);
+}
+
+.result-line:last-child {
+    border-bottom: none;
+}
+
+.status-jawn {
+    font-weight: bold;
+    color: var(--jawn-color);
+}
+
+.status-not-jawn {
+    font-weight: bold;
+    color: var(--not-jawn-color);
+}
+
+/* --- 17. UPDATED: Keyframes for background animation --- */
+@keyframes animatedStarfield {
+    from { 
+        --anim-x: 0px;
+        --anim-y: 0px;
+    }
+    to { 
+        --anim-x: 1000px;
+        --anim-y: 1000px;
+    }
+}
+
+/* --- 18. UPDATED: Keyframes for dot color cycle (now uses lightness var) --- */
+@keyframes colorCycle {
+    0%   { --dot-color: hsl(0, 80%, var(--dot-color-lightness, 70%)); }
+    25%  { --dot-color: hsl(90, 80%, var(--dot-color-lightness, 70%)); }
+    50%  { --dot-color: hsl(180, 80%, var(--dot-color-lightness, 70%)); }
+    75%  { --dot-color: hsl(270, 80%, var(--dot-color-lightness, 70%)); }
+    100% { --dot-color: hsl(360, 80%, var(--dot-color-lightness, 70%)); }
+}
+
+/* --- 19. UPDATED: Starfield "Mesh" pseudo-element --- */
+body::before {
+    /* Dots are hidden by default */
+    display: none;
+    
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    
+    background-image: 
+        radial-gradient(2px 2px at 25px 25px, var(--dot-color, var(--text-color)), transparent 100%),
+        radial-gradient(2px 2px at 50px 50px, var(--dot-color, var(--text-color)), transparent 100%);
+    background-size: 50px 50px;
+    
+    opacity: var(--dot-opacity, 0.3); 
+    
+    animation:
+        animatedStarfield 200s linear infinite,
+        colorCycle 10s linear infinite;
+
+    background-position: 
+        calc(var(--anim-x, 0px) + (var(--mouse-x-percent, 0) * -50px)) 
+        calc(var(--anim-y, 0px) + (var(--mouse-y-percent, 0) * -50px));
+    
+    transition: background-position 0.1s ease-out;
+}
+
+/* --- 20. NEW: Rule to show dots in dark mode --- */
+html.dark-mode body {
+    /* Override light mode gradient */
+    background-image: none;
+    background-color: var(--bg-color);
+}
+
+html.dark-mode body::before {
+    /* Show the dots */
+    display: block;
+}
+
+/* --- 21. NEW: Keyframes for subtle light mode gradient --- */
+@keyframes moveSubtleGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* --- 22. NEW: Success Animation Styles --- */
+#success-animation {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    opacity: 0;
+}
+
+#success-animation.show-success {
+    display: flex;
+    animation: successFadeZoom 2s ease-in-out;
+}
+
+#success-animation i {
+    font-size: 10rem;
+    color: var(--jawn-color);
+    text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+
+/* --- 23. NEW: Keyframes for Success Animation --- */
+@keyframes successFadeZoom {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: scale(1.0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
 }
