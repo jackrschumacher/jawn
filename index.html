@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>jawn.uk</title>
+        <title>Are you a Jawn?</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="styles.css">
@@ -20,12 +20,25 @@
             <i class="icon-sun bi bi-sun-fill"></i>
             <i class="icon-moon bi bi-moon-fill"></i>
         </button>
+        <h1>Are you a Jawn?</h1>
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <div id="wheel">
+                <div class="wheel-text" style="--i: 0;"><span>JAWN</span></div>
+                <div class="wheel-text" style="--i: 1;"><span>NOT JAWN</span></div>
+                <div class="wheel-text" style="--i: 2;"><span>JAWN</span></div>
+                <div class="wheel-text" style="--i: 3;"><span>NOT JAWN</span></div>
+                <div class="wheel-text" style="--i: 4;"><span>JAWN</span></div>
+                <div class="wheel-text" style="--i: 5;"><span>NOT JAWN</span></div>
+                <div class="wheel-text" style="--i: 6;"><span>JAWN</span></div>
+                <div class="wheel-text" style="--i: 7;"><span>NOT JAWN</span></div>
+            </div>
+            <button id="spin-button">SPIN</button>
+            <div id="result-text"></div>
+        </div>
 
-        <div id="jawn-box">Hello Jawns</div>
-        <p class="click-prompt">Click the box to spin it!</p>
-
-        <script>
-            // --- Theme Toggle Script ---
+<script>
+            // --- Theme Toggle Script (existing) ---
             (function() {
                 const themeToggleButton = document.getElementById('theme-toggle');
                 const htmlElement = document.documentElement; 
@@ -45,31 +58,89 @@
                 });
             })();
 
-            // --- Jawn-Box Spin & Random Color Script ---
+//   
+//            (function() {
+//                const jawnBox = document.getElementById('jawn-box');
+//
+//                function getRandomColor() {
+//                    return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+//                }
+//
+//                function setRandomColors() {
+//                    jawnBox.style.backgroundColor = getRandomColor();
+//                    jawnBox.style.color = getRandomColor();
+//                }
+//
+//                jawnBox.addEventListener('click', function() {
+//                    if (jawnBox.classList.contains('is-spinning')) {
+//                        return;
+//                    }
+//                    setRandomColors();
+//                    jawnBox.classList.add('is-spinning');
+//                });
+//
+//                jawnBox.addEventListener('animationend', function() {
+//                    jawnBox.classList.remove('is-spinning');
+//                    jawnBox.style.backgroundColor = ''; 
+//                    jawnBox.style.color = ''; 
+//                });
+//            })();
+
+            // --- 3. UPDATED: Wheel Spin Script ---
             (function() {
-                const jawnBox = document.getElementById('jawn-box');
+                const wheel = document.getElementById('wheel');
+                const spinButton = document.getElementById('spin-button');
+                const resultText = document.getElementById('result-text');
+                let isSpinning = false;
+                let currentRotation = 0;
 
-                function getRandomColor() {
-                    return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-                }
+                const numSlices = 8;
+                const sliceAngle = 360 / numSlices; // 45 degrees
 
-                function setRandomColors() {
-                    jawnBox.style.backgroundColor = getRandomColor();
-                    jawnBox.style.color = getRandomColor();
-                }
+                spinButton.addEventListener('click', function() {
+                    if (isSpinning) return;
 
-                jawnBox.addEventListener('click', function() {
-                    if (jawnBox.classList.contains('is-spinning')) {
-                        return;
-                    }
-                    setRandomColors();
-                    jawnBox.classList.add('is-spinning');
-                });
+                    isSpinning = true;
+                    spinButton.disabled = true;
+                    resultText.textContent = ''; 
 
-                jawnBox.addEventListener('animationend', function() {
-                    jawnBox.classList.remove('is-spinning');
-                    jawnBox.style.backgroundColor = ''; 
-                    jawnBox.style.color = ''; 
+                    // Pick a random slice (0-7)
+                    const sliceNumber = Math.floor(Math.random() * numSlices);
+                    
+                    // Even slices (0, 2, 4, 6) are "JAWN"
+                    const isJawn = sliceNumber % 2 === 0;
+
+                    // Calculate the center of the target slice
+                    const centerOfSlice = sliceNumber * sliceAngle;
+                    
+                    // Add a random offset so it doesn't land in the same spot
+                    // This will be +/- 15 degrees from the center
+                    const randomOffset = (Math.random() * (sliceAngle - 15)) - (sliceAngle / 2 - 7.5);
+                    
+                    const landAngle = centerOfSlice + randomOffset;
+
+                    // Add at least 10 full spins
+                    const totalRotation = (360 * 10) + landAngle;
+
+                    // Apply the spin
+                    wheel.style.transition = 'transform 4s ease-out';
+                    wheel.style.transform = `rotate(${totalRotation}deg)`;
+
+                    // After animation ends
+                    setTimeout(() => {
+                        isSpinning = false;
+                        spinButton.disabled = false;
+                        
+                        // Show result
+                        resultText.textContent = isJawn ? 'You ARE a Jawn!' : 'You are NOT a Jawn!';
+                        
+                        // "Reset" the wheel's rotation without animating
+                        currentRotation = totalRotation % 360;
+                        wheel.style.transition = 'none';
+                        wheel.style.transform = `rotate(${currentRotation}deg)`;
+                        void wheel.offsetWidth; // Force browser repaint
+
+                    }, 4000); // Must match the 4s transition time
                 });
             })();
         </script>

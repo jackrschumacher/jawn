@@ -13,6 +13,9 @@ Click nbfs://nbhost/SystemFileSystem/Templates/ClientSide/css.css to edit this t
     --container-bg: #f4f4f4;
     --button-bg: #e0e0e0;
     --button-text: #222222;
+    /* Wheel Colors */
+    --jawn-color: #06b6d4; /* Cyan */
+    --not-jawn-color: #f43f5e; /* Rose */
 }
 
 /* 2. Define colors for Dark Mode using a class */
@@ -22,6 +25,9 @@ html.dark-mode {
     --container-bg: #333333;
     --button-bg: #555555;
     --button-text: #eeeeee;
+    /* Wheel Colors */
+    --jawn-color: #22d3ee; /* Brighter Cyan */
+    --not-jawn-color: #fb7185; /* Brighter Rose */
 }
 
 /* 3. Apply colors and mobile-first styles (CENTERED) */
@@ -126,13 +132,15 @@ html.dark-mode #theme-toggle .icon-moon {
     display: block; /* Show moon in dark mode */
 }
 
-/* 11. Style for the new click prompt */
+/* 11. UPDATED: Style for the click prompt (now inside jawn-box) */
 .click-prompt {
-    text-align: center;
+    /* text-align is inherited from parent */
     color: var(--text-color);
     opacity: 0.7;
     margin-top: 10px;
+    margin-bottom: 0; /* Remove default <p> margin */
     font-style: italic;
+    font-size: 0.9rem; /* Make it a bit smaller */
 }
 
 /* 12. UPDATED: Mobile Optimization */
@@ -156,4 +164,109 @@ html.dark-mode #theme-toggle .icon-moon {
     #theme-toggle {
         right: 10px;
     }
+}
+
+/* --- 13. UPDATED: Wheel of Jawn Styles --- */
+
+.wheel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative; /* For the pointer */
+}
+
+.wheel-pointer {
+    width: 0;
+    height: 0;
+    /* Creates a triangle */
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 25px solid var(--text-color);
+    z-index: 10;
+    position: relative;
+    top: 5px; /* Sits just on top of the wheel's border */
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,0.2));
+}
+
+#wheel {
+    width: 500px; /* Made wheel slightly larger */
+    height: 500px;
+    border-radius: 50%;
+    /* UPDATED: 8-slice gradient */
+    background: conic-gradient(
+        from -22.5deg, /* Start 1/2 slice back to center pointer */
+        var(--jawn-color) 0deg 45deg,
+        var(--not-jawn-color) 45deg 90deg,
+        var(--jawn-color) 90deg 135deg,
+        var(--not-jawn-color) 135deg 180deg,
+        var(--jawn-color) 180deg 225deg,
+        var(--not-jawn-color) 225deg 270deg,
+        var(--jawn-color) 270deg 315deg,
+        var(--not-jawn-color) 315deg 360deg
+    );
+    border: 5px solid var(--container-bg);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* NEW: Styles for the 8 text labels */
+.wheel-text {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box; /* Include padding in height */
+    padding-top: 25px; /* Pushes text from center */
+    
+    /* Rotate each section into place */
+    transform: rotate(calc(45deg * var(--i)));
+    
+    /* Text styles */
+    text-align: center;
+    user-select: none;
+    color: #000;
+    font-weight: bold;
+    font-size: 1rem;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.2);
+}
+
+/* DELETED: Old label styles */
+/* .jawn-label, .not-jawn-label { ... } */
+
+
+#spin-button {
+    margin-top: -40px; /* Sits on top of the wheel */
+    width: 80px;
+    height: 80px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--button-text);
+    background-color: var(--button-bg);
+    border: 5px solid var(--bg-color); /* Creates a "separate" look */
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.2s;
+    z-index: 5; /* Sits below pointer, above wheel */
+}
+
+#spin-button:hover {
+    opacity: 0.8;
+}
+
+#spin-button:active {
+    transform: scale(0.95);
+}
+
+#spin-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#result-text {
+    margin-top: 30px; /* Give space from the button */
+    font-size: 1.5rem;
+    font-weight: bold;
+    min-height: 1.5rem; /* Reserve space so layout doesn't jump */
+    text-align: center;
 }
