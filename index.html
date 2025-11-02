@@ -29,11 +29,11 @@
                     <div id="wheel">
                         <div class="wheel-text" style="--i: 0;"><span>JAWN</span></div>
                         <div class="wheel-text" style="--i: 1;"><span>NOT JAWN</span></div>
-                        <div class="wheel-text" style="--i: 2;"><span>JAWN</span></div>
-                        <div class="wheel-text" style="--i: 3;"><span>NOT JAWN</span></div>
-                        <div class="wheel-text" style="--i: 4;"><span>JAWN</span></div>
-                        <div class="wheel-text" style="--i: 5;"><span>NOT JAWN</span></div>
-                        <div class="wheel-text" style="--i: 6;"><span>JAWN</span></div>
+                        <div class="wheel-text flip-text" style="--i: 2;"><span>JAWN</span></div>
+                        <div class="wheel-text flip-text" style="--i: 3;"><span>NOT JAWN</span></div>
+                        <div class="wheel-text flip-text" style="--i: 4;"><span>JAWN</span></div>
+                        <div class="wheel-text flip-text" style="--i: 5;"><span>NOT JAWN</span></div>
+                        <div class="wheel-text flip-text" style="--i: 6;"><span>JAWN</span></div>
                         <div class="wheel-text" style="--i: 7;"><span>NOT JAWN</span></div>
                     </div>
                 </div>
@@ -59,10 +59,6 @@
             </div>
 
         </main>
-
-        <div id="success-animation">
-            <i class="bi bi-check-circle-fill"></i>
-        </div>
 
         <script>
             // --- Theme Toggle Script (existing) ---
@@ -97,12 +93,10 @@
                 const nameInput = document.getElementById('name-list-input');
                 const resultTitle = document.getElementById('result-title');
                 const resultsPlaceholder = document.getElementById('results-placeholder');
+                
                 const copyButton = document.getElementById('copy-button');
-                
-                // 2. NEW: Get the animation element
-                const successAnimation = document.getElementById('success-animation');
-                
                 let allResults = [];
+                
                 let isSpinning = false;
                 let currentRotation = 0;
                 const numSlices = 8;
@@ -147,6 +141,7 @@
                     });
                 }
 
+                // UPDATED: Added a 1-second delay in the loop
                 async function processNames() {
                     allResults = [];
                     const names = nameInput.value.split('\n')
@@ -167,20 +162,13 @@
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
 
+                    isSpinning = false;
+                    spinButton.disabled = false;
                     resultTitle.textContent = 'Results:';
+
                     if (allResults.length > 0) {
                         copyButton.style.display = 'flex';
                     }
-                    
-                    // 3. NEW: Trigger animation and re-enable button
-                    successAnimation.classList.add('show-success');
-
-                    // Wait for the animation to finish (2 seconds)
-                    setTimeout(() => {
-                        successAnimation.classList.remove('show-success');
-                        isSpinning = false;
-                        spinButton.disabled = false;
-                    }, 2000); // Must match CSS animation duration
                 }
 
                 spinButton.addEventListener('click', function() {
@@ -216,9 +204,11 @@
                 const html = document.documentElement;
                 window.addEventListener('mousemove', (e) => {
                     requestAnimationFrame(() => {
+                        // Calculate mouse position as a percentage from center (-0.5 to 0.5)
                         const xPercent = (e.clientX / window.innerWidth) - 0.5;
                         const yPercent = (e.clientY / window.innerHeight) - 0.5;
                         
+                        // Set CSS variables
                         html.style.setProperty('--mouse-x-percent', xPercent);
                         html.style.setProperty('--mouse-y-percent', yPercent);
                     });
