@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="styles.css">
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    </head>
+    <body>
+
+        <a href="https://github.com/jackrschumacher/jawn" target="_blank" rel="noopener noreferrer" class="icon-button" id="github-link" aria-label="View on GitHub">
+            <i class="bi bi-github"></i>
+        </a>
+        
+        <button id="theme-toggle" class="icon-button" aria-label="Toggle theme">
+            <i class="icon-sun bi bi-sun-fill"></i>
+            <i class="icon-moon bi bi-moon-fill"></i>
+        </button>
+
+        <div id="jawn-box">Hello Jawns</div>
+        <p class="click-prompt">Click the box to spin it!</p>
+
+        <script>
+            // --- Theme Toggle Script ---
+            (function() {
+                const themeToggleButton = document.getElementById('theme-toggle');
+                const htmlElement = document.documentElement; 
+                const currentTheme = localStorage.getItem('theme');
+
+                if (currentTheme === 'dark') {
+                    htmlElement.classList.add('dark-mode');
+                }
+
+                themeToggleButton.addEventListener('click', function() {
+                    htmlElement.classList.toggle('dark-mode');
+                    if (htmlElement.classList.contains('dark-mode')) {
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            })();
+
+            // --- Jawn-Box Spin & Random Color Script ---
+            (function() {
+                const jawnBox = document.getElementById('jawn-box');
+
+                function getRandomColor() {
+                    return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                }
+
+                function setRandomColors() {
+                    jawnBox.style.backgroundColor = getRandomColor();
+                    jawnBox.style.color = getRandomColor();
+                }
+
+                jawnBox.addEventListener('click', function() {
+                    if (jawnBox.classList.contains('is-spinning')) {
+                        return;
+                    }
+                    setRandomColors();
+                    jawnBox.classList.add('is-spinning');
+                });
+
+                jawnBox.addEventListener('animationend', function() {
+                    jawnBox.classList.remove('is-spinning');
+                    jawnBox.style.backgroundColor = ''; 
+                    jawnBox.style.color = ''; 
+                });
+            })();
+        </script>
+    </body>
+</html>

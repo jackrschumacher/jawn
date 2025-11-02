@@ -1,0 +1,158 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/ClientSide/css.css to edit this template
+*/
+/* Created on : Nov 2, 2025, 12:10:46 AM
+    Author     : jackr
+*/
+
+/* 1. Define colors for Light Mode (default) */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #222222;
+    --container-bg: #f4f4f4;
+    --button-bg: #e0e0e0;
+    --button-text: #222222;
+}
+
+/* 2. Define colors for Dark Mode using a class */
+html.dark-mode {
+    --bg-color: #222222;
+    --text-color: #eeeeee;
+    --container-bg: #333333;
+    --button-bg: #555555;
+    --button-text: #eeeeee;
+}
+
+/* 3. Apply colors and mobile-first styles (CENTERED) */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+    
+    /* Center content */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 4. Style the main container */
+#jawn-box {
+    max-width: 900px;
+    width: 90%; /* Make it responsive */
+    margin: 20px 0; /* Vertical margin only */
+    padding: 20px;
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.2rem;
+    transition: background-color 0.3s, color 0.3s;
+    user-select: none;
+    cursor: pointer;
+}
+
+/* 5. Add the spinning animation class */
+#jawn-box.is-spinning {
+    animation: spin-only 0.5s linear;
+}
+
+/* 6. Add the keyframes for the spin-only animation */
+@keyframes spin-only {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 7. REPLACED: Generic style for ALL icon buttons */
+.icon-button {
+    position: absolute;
+    top: 20px;
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 50%;
+    transition: background-color 0.3s, color 0.3s;
+    
+    /* Center the icon */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none; /* For the <a> tag */
+}
+
+.icon-button:hover {
+    opacity: 0.8;
+}
+
+/* 8. NEW: Sizing for Bootstrap Icons */
+.icon-button i {
+    font-size: 1.5rem; /* Makes icons larger */
+    line-height: 1;
+}
+
+/* 9. NEW: Specific button placement */
+#github-link {
+    left: 20px; /* Position top-left */
+}
+
+#theme-toggle {
+    right: 20px; /* Position top-right */
+}
+
+/* 10. UPDATED: Icon visibility for theme toggle */
+#theme-toggle .icon-moon {
+    display: none; /* Hide moon in light mode */
+}
+
+html.dark-mode #theme-toggle .icon-sun {
+    display: none; /* Hide sun in dark mode */
+}
+
+html.dark-mode #theme-toggle .icon-moon {
+    display: block; /* Show moon in dark mode */
+}
+
+/* 11. Style for the new click prompt */
+.click-prompt {
+    text-align: center;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+/* 12. UPDATED: Mobile Optimization */
+@media (max-width: 600px) {
+    #jawn-box {
+        margin: 10px;
+        padding: 15px;
+    }
+
+    /* Update both buttons for mobile */
+    .icon-button {
+        top: 10px;
+        width: 44px;
+        height: 44px;
+    }
+
+    #github-link {
+        left: 10px;
+    }
+
+    #theme-toggle {
+        right: 10px;
+    }
+}
