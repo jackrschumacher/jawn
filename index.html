@@ -85,6 +85,31 @@
                     }
                 });
             })();
+            
+            // === Levenshtein Distance Helper (Unchanged) ===
+            function getLevenshteinDistance(a, b) {
+                if (a.length === 0) return b.length;
+                if (b.length === 0) return a.length;
+                const matrix = [];
+                for (let i = 0; i <= b.length; i++) {
+                    matrix[i] = [i];
+                }
+                for (let j = 0; j <= a.length; j++) {
+                    matrix[0][j] = j;
+                }
+                for (let i = 1; i <= b.length; i++) {
+                    for (let j = 1; j <= a.length; j++) {
+                        const cost = a[j - 1] === b[i - 1] ? 0 : 1;
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j] + 1,      // deletion
+                            matrix[i][j - 1] + 1,      // insertion
+                            matrix[i - 1][j - 1] + cost // substitution
+                        );
+                    }
+                }
+                return matrix[b.length][a.length];
+            }
+
 
             // --- Wheel Spin Script (Updated) ---
             (function() {
@@ -102,13 +127,43 @@
                 const numSlices = 8;
                 const sliceAngle = 360 / numSlices; // 45 degrees
 
-                function spinForName(name) {
+                // === MODIFIED spinForName FUNCTION ===
+                function spinForName(name, duration) {
                     return new Promise((resolve) => {
-                        const sliceNumber = Math.floor(Math.random() * numSlices);
-                        const isJawn = sliceNumber % 2 === 0;
+                        
+                        // --- UPDATED "LOOSER" JAWN LOGIC ---
+                        const targetWord = "jawn";
+                        const distance = getLevenshteinDistance(name.toLowerCase(), targetWord);
+                        
+                        // Probabilities are now higher for all distances
+                        const probabilityMap = {
+                            0: 1.0,  // "jawn" -> 100%
+                            1: 0.95, // "john", "dawn" -> 95% (was 90%)
+                            2: 0.85, // "jack", "lawn" -> 85% (was 75%)
+                            3: 0.70, // "jason" -> 70% (was 50%)
+                            4: 0.60, // "jackson" -> 60% (was 25%)
+                            5: 0.40  // NEW: 40% (was default 10%)
+                        };
+                        
+                        // Default probability for 6+ distance is now 20%
+                        const jawnProbability = probabilityMap[distance] !== undefined ? probabilityMap[distance] : 0.20;
+                        // --- END UPDATED LOGIC ---
+                        
+                        const isJawn = Math.random() < jawnProbability;
                         const resultString = isJawn ? 'JAWN' : 'NOT A JAWN';
+                        const percentageString = Math.round(jawnProbability * 100);
 
-                        allResults.push(`${name}: ${resultString}`);
+                        allResults.push(`${name}: ${resultString} (${percentageString}% Jawn)`);
+
+                        // --- Force the wheel to land on the correct result ---
+                        let sliceNumber;
+                        if (isJawn) {
+                            const jawnSlices = [0, 2, 4, 6];
+                            sliceNumber = jawnSlices[Math.floor(Math.random() * jawnSlices.length)];
+                        } else {
+                            const notJawnSlices = [1, 3, 5, 7];
+                            sliceNumber = notJawnSlices[Math.floor(Math.random() * notJawnSlices.length)];
+                        }
 
                         const centerOfSlice = sliceNumber * sliceAngle;
                         const randomOffset = (Math.random() * (sliceAngle - 15)) - (sliceAngle / 2 - 7.5);
@@ -116,7 +171,7 @@
                         
                         const totalRotation = currentRotation + 7200 + landAngle; 
 
-                        wheel.style.transition = 'transform 4s ease-out';
+                        wheel.style.transition = `transform ${duration / 1000}s ease-out`;
                         wheel.style.transform = `rotate(${totalRotation}deg)`;
 
                         setTimeout(() => {
@@ -132,16 +187,22 @@
                             statusSpan.textContent = resultString;
                             statusSpan.className = isJawn ? 'status-jawn' : 'status-not-jawn';
                             
+                            const percentSpan = document.createElement('span');
+                            percentSpan.className = 'status-percent';
+                            percentSpan.textContent = ` (${percentageString}% Jawn)`;
+                            
                             resultLine.textContent = `${name}: `;
                             resultLine.appendChild(statusSpan);
+                            resultLine.appendChild(percentSpan);
+VScodeError: 
                             resultsPlaceholder.appendChild(resultLine);
 
                             resolve(); 
-                        }, 4000); 
+                        }, duration);
                     });
                 }
 
-                // UPDATED: Added a 1-second delay in the loop
+                // === processNames FUNCTION (sets dynamic speed) ===
                 async function processNames() {
                     allResults = [];
                     const names = nameInput.value.split('\n')
@@ -156,10 +217,24 @@
                         spinButton.disabled = false;
                         return;
                     }
+
+                    // --- Dynamic speed logic (Unchanged) ---
+                    let spinDuration = 4000;
+                    let pauseDuration = 1000;
+                    
+                    if (names.length > 5) {
+                        spinDuration = 2000;
+                        pauseDuration = 500;
+                    }
+                    if (names.length > 10) {
+                        spinDuration = 1000;
+                        pauseDuration = 250;
+                    }
+                    // --- End speed logic ---
                     
                     for (const name of names) {
-                        await spinForName(name);
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        await spinForName(name, spinDuration); 
+                        await new Promise(resolve => setTimeout(resolve, pauseDuration)); 
                     }
 
                     isSpinning = false;
@@ -170,14 +245,10 @@
                         copyButton.style.display = 'flex';
                     }
 
-                    // === COMPLETION ANIMATION ===
-                    // Trigger the completion animation
                     resultsPlaceholder.classList.add('animation-complete');
-                    // Remove the class after the animation finishes
                     setTimeout(() => {
                         resultsPlaceholder.classList.remove('animation-complete');
                     }, 600); 
-                    // ==========================
                 }
 
                 spinButton.addEventListener('click', function() {
@@ -208,16 +279,13 @@
                 });
             })();
 
-            // --- UPDATED: Mouse Position Tracker ---
+            // --- Mouse Position Tracker (existing) ---
             (function() {
                 const html = document.documentElement;
                 window.addEventListener('mousemove', (e) => {
                     requestAnimationFrame(() => {
-                        // Calculate mouse position as a percentage from center (-0.5 to 0.5)
                         const xPercent = (e.clientX / window.innerWidth) - 0.5;
                         const yPercent = (e.clientY / window.innerHeight) - 0.5;
-                        
-                        // Set CSS variables
                         html.style.setProperty('--mouse-x-percent', xPercent);
                         html.style.setProperty('--mouse-y-percent', yPercent);
                     });
