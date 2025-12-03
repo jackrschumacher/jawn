@@ -7,22 +7,32 @@
         <link rel="stylesheet" href="styles.css">
         
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <link rel="icon" type="image/svg+xml" href="logo.svg">
     
     </head>
     <body>
 
+        <div id="global-stats-pill" class="stats-pill">
+            <span class="stat-item"><i class="bi bi-arrow-repeat"></i> <span id="stat-spins">...</span></span>
+            <div class="divider"></div>
+            <span class="stat-item"><i class="bi bi-check-circle"></i> <span id="stat-jawns">...</span></span>
+            <div class="divider"></div>
+            <span class="stat-item"><i class="bi bi-x-circle"></i> <span id="stat-not-jawns">...</span></span>
+        </div>
+
         <a href="https://github.com/jackrschumacher/jawn" target="_blank" rel="noopener noreferrer" class="icon-button" id="github-link" aria-label="View on GitHub">
             <i class="bi bi-github"></i>
         </a>
         
-        <button id="theme-toggle" class="icon-button" aria-label="Toggle theme">
-            <i class="icon-sun bi bi-sun-fill"></i>
-            <i class="icon-moon bi bi-moon-fill"></i>
-        </button>
+        <div class="top-controls">
+            <button id="theme-toggle" class="icon-button" aria-label="Toggle theme">
+                <i class="icon-sun bi bi-sun-fill"></i>
+                <i class="icon-moon bi bi-moon-fill"></i>
+            </button>
+        </div>
 
         <main class="main-content">
-
             <div class="column-left">
                 <div class="wheel-container">
                     <div class="wheel-pointer"></div>
@@ -33,7 +43,7 @@
                         <div class="wheel-text flip-text" style="--i: 3;"><span>NOT JAWN</span></div>
                         <div class="wheel-text flip-text" style="--i: 4;"><span>JAWN</span></div>
                         <div class="wheel-text flip-text" style="--i: 5;"><span>NOT JAWN</span></div>
-                        <div class="wheel-text flip-text" style="--i: 6;"><span>JAWN</span></div>
+                        <div class="wheel-text" style="--i: 6;"><span>JAWN</span></div>
                         <div class="wheel-text" style="--i: 7;"><span>NOT JAWN</span></div>
                     </div>
                 </div>
@@ -57,36 +67,282 @@
                     <div id="results-placeholder" class="is-placeholder">Your results will appear here...</div>
                 </div>
             </div>
-
         </main>
 
-        <script>
-            // --- Theme Toggle Script (existing) ---
-            (function() {
-                const themeToggleButton = document.getElementById('theme-toggle');
-                const htmlElement = document.documentElement;
-                const currentTheme = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        <div id="stats-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Community Statistics</h2>
+                    <button id="close-stats" class="close-button"><i class="bi bi-x-lg"></i></button>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="statsChart"></canvas>
+                </div>
 
-                if (currentTheme === 'dark') {
-                    htmlElement.classList.add('dark-mode');
-                } else if (currentTheme === 'light') {
-                    htmlElement.classList.remove('dark-mode');
-                } else if (prefersDark) {
-                    htmlElement.classList.add('dark-mode');
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="modal-total-spins">0</h3>
+                        <span>Total Spins</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="modal-total-jawns" class="text-jawn">0</h3>
+                        <span>Total Jawns</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="modal-total-not-jawns" class="text-not-jawn">0</h3>
+                        <span>Total Not Jawns</span>
+                    </div>
+                </div>
+
+                <div class="history-section">
+                    <h3>History by Month</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Spins</th>
+                                    <th>Jawns</th>
+                                    <th>Not Jawns</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+            import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyBESuUn74foo-ZcplfXJK5DDZOBKIOajdQ",
+                authDomain: "jawn-90a49.firebaseapp.com",
+                databaseURL: "https://jawn-90a49-default-rtdb.firebaseio.com",
+                projectId: "jawn-90a49",
+                storageBucket: "jawn-90a49.firebasestorage.app",
+                messagingSenderId: "1009150566800",
+                appId: "1:1009150566800:web:62e5596171656bc96e5315"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+
+            let myChart = null;
+
+            // --- Function to update chart colors dynamically ---
+            function updateChartColors() {
+                if (!myChart) return;
+                
+                const style = getComputedStyle(document.body);
+                const jawnColor = style.getPropertyValue('--jawn-color').trim();
+                const notJawnColor = style.getPropertyValue('--not-jawn-color').trim();
+                const textColor = style.getPropertyValue('--text-color').trim();
+                const gridColor = style.getPropertyValue('--chart-grid-color').trim();
+                const lineColor = style.getPropertyValue('--chart-line-color').trim();
+
+                if (myChart.data.datasets[0]) {
+                    myChart.data.datasets[0].backgroundColor = jawnColor;
+                }
+                if (myChart.data.datasets[1]) {
+                    myChart.data.datasets[1].backgroundColor = notJawnColor;
+                }
+                if (myChart.data.datasets[2]) {
+                    myChart.data.datasets[2].backgroundColor = lineColor;
+                    myChart.data.datasets[2].borderColor = lineColor;
                 }
 
-                themeToggleButton.addEventListener('click', function() {
-                    htmlElement.classList.toggle('dark-mode');
-                    if (htmlElement.classList.contains('dark-mode')) {
-                        localStorage.setItem('theme', 'dark');
-                    } else {
-                        localStorage.setItem('theme', 'light');
+                if (myChart.options.scales.x) myChart.options.scales.x.ticks.color = textColor;
+                if (myChart.options.scales.y) {
+                    myChart.options.scales.y.ticks.color = textColor;
+                    myChart.options.scales.y.grid.color = gridColor;
+                }
+                
+                if (myChart.options.plugins.legend) myChart.options.plugins.legend.labels.color = textColor;
+
+                myChart.update();
+            }
+
+            function initChart(historyData) {
+                const ctx = document.getElementById('statsChart').getContext('2d');
+                
+                const months = Object.keys(historyData).sort();
+                const spinsData = months.map(m => historyData[m].spins || 0);
+                const jawnsData = months.map(m => historyData[m].jawns || 0);
+                const notJawnsData = months.map(m => historyData[m].notJawns || 0);
+                
+                if (myChart) myChart.destroy();
+
+                const style = getComputedStyle(document.body);
+                const jawnColor = style.getPropertyValue('--jawn-color').trim();
+                const notJawnColor = style.getPropertyValue('--not-jawn-color').trim();
+                const textColor = style.getPropertyValue('--text-color').trim();
+                const gridColor = style.getPropertyValue('--chart-grid-color').trim();
+                const lineColor = style.getPropertyValue('--chart-line-color').trim();
+
+                myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: 'Jawns',
+                                data: jawnsData,
+                                backgroundColor: jawnColor,
+                                borderRadius: 4,
+                                order: 2
+                            },
+                            {
+                                label: 'Not Jawns',
+                                data: notJawnsData,
+                                backgroundColor: notJawnColor,
+                                borderRadius: 4,
+                                order: 3 
+                            },
+                            {
+                                label: 'Total Spins',
+                                data: spinsData,
+                                borderColor: lineColor,
+                                backgroundColor: lineColor,
+                                borderRadius: 4,
+                                type: 'line',
+                                tension: 0.4,
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: textColor } },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: gridColor },
+                                ticks: { color: textColor }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor }
+                            }
+                        }
                     }
                 });
-            })();
-            
-            // === Levenshtein Distance Helper (Unchanged) ===
+            }
+
+            function getCurrentMonthKey() {
+                const now = new Date();
+                return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            }
+
+            function recordSpinResult(isJawn) {
+                const monthKey = getCurrentMonthKey();
+                const updates = [
+                    ref(db, 'stats/global/spins'),
+                    ref(db, `stats/history/${monthKey}/spins`)
+                ];
+
+                if (isJawn) {
+                    updates.push(ref(db, 'stats/global/jawns'));
+                    updates.push(ref(db, `stats/history/${monthKey}/jawns`));
+                } else {
+                    updates.push(ref(db, 'stats/global/notJawns'));
+                    updates.push(ref(db, `stats/history/${monthKey}/notJawns`));
+                }
+
+                updates.forEach(reference => {
+                    runTransaction(reference, (current) => (current || 0) + 1);
+                });
+            }
+
+            // Listen for Stats Changes
+            onValue(ref(db, 'stats'), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                const global = data.global || { spins: 0, jawns: 0, notJawns: 0 };
+                const history = data.history || {};
+
+                // Update Pill
+                document.getElementById('stat-spins').textContent = (global.spins || 0).toLocaleString();
+                document.getElementById('stat-jawns').textContent = (global.jawns || 0).toLocaleString();
+                document.getElementById('stat-not-jawns').textContent = (global.notJawns || 0).toLocaleString();
+
+                // Update Modal Cards
+                document.getElementById('modal-total-spins').textContent = (global.spins || 0).toLocaleString();
+                document.getElementById('modal-total-jawns').textContent = (global.jawns || 0).toLocaleString();
+                document.getElementById('modal-total-not-jawns').textContent = (global.notJawns || 0).toLocaleString();
+
+                // Update Table
+                const tbody = document.getElementById('history-table-body');
+                tbody.innerHTML = ''; 
+                const sortedMonthsDesc = Object.keys(history).sort().reverse();
+
+                sortedMonthsDesc.forEach(month => {
+                    const mData = history[month];
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${month}</td>
+                        <td style="color: var(--text-color); font-weight: bold;">${(mData.spins || 0).toLocaleString()}</td>
+                        <td style="color: var(--jawn-color);">${(mData.jawns || 0).toLocaleString()}</td>
+                        <td style="color: var(--not-jawn-color);">${(mData.notJawns || 0).toLocaleString()}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                initChart(history);
+            });
+
+            // Modal Controls
+            const statsModal = document.getElementById('stats-modal');
+            const statsPill = document.getElementById('global-stats-pill');
+            const closeStatsBtn = document.getElementById('close-stats');
+
+            statsPill.addEventListener('click', () => {
+                statsModal.classList.add('active');
+                if(myChart) myChart.resize(); 
+            });
+
+            closeStatsBtn.addEventListener('click', () => {
+                statsModal.classList.remove('active');
+            });
+
+            statsModal.addEventListener('click', (e) => {
+                if (e.target === statsModal) {
+                    statsModal.classList.remove('active');
+                }
+            });
+
+            // Theme Toggle
+            const themeToggleButton = document.getElementById('theme-toggle');
+            const htmlElement = document.documentElement;
+            const currentTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (currentTheme === 'dark') {
+                htmlElement.classList.add('dark-mode');
+            } else if (currentTheme === 'light') {
+                htmlElement.classList.remove('dark-mode');
+            } else if (prefersDark) {
+                htmlElement.classList.add('dark-mode');
+            }
+
+            themeToggleButton.addEventListener('click', function() {
+                htmlElement.classList.toggle('dark-mode');
+                if (htmlElement.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+                updateChartColors();
+            });
+
             function getLevenshteinDistance(a, b) {
                 if (a.length === 0) return b.length;
                 if (b.length === 0) return a.length;
@@ -101,196 +357,145 @@
                     for (let j = 1; j <= a.length; j++) {
                         const cost = a[j - 1] === b[i - 1] ? 0 : 1;
                         matrix[i][j] = Math.min(
-                            matrix[i - 1][j] + 1,      // deletion
-                            matrix[i][j - 1] + 1,      // insertion
-                            matrix[i - 1][j - 1] + cost // substitution
+                            matrix[i - 1][j] + 1,      
+                            matrix[i][j - 1] + 1,      
+                            matrix[i - 1][j - 1] + cost 
                         );
                     }
                 }
                 return matrix[b.length][a.length];
             }
 
+            const wheel = document.getElementById('wheel');
+            const spinButton = document.getElementById('spin-button');
+            const nameInput = document.getElementById('name-list-input');
+            const resultTitle = document.getElementById('result-title');
+            const resultsPlaceholder = document.getElementById('results-placeholder');
+            const copyButton = document.getElementById('copy-button');
+            
+            let allResults = [];
+            let isSpinning = false;
+            let currentRotation = 0;
+            const numSlices = 8;
+            const sliceAngle = 360 / numSlices;
 
-            // --- Wheel Spin Script (Updated) ---
-            (function() {
-                const wheel = document.getElementById('wheel');
-                const spinButton = document.getElementById('spin-button');
-                const nameInput = document.getElementById('name-list-input');
-                const resultTitle = document.getElementById('result-title');
-                const resultsPlaceholder = document.getElementById('results-placeholder');
-                
-                const copyButton = document.getElementById('copy-button');
-                let allResults = [];
-                
-                let isSpinning = false;
-                let currentRotation = 0;
-                const numSlices = 8;
-                const sliceAngle = 360 / numSlices; // 45 degrees
-
-                // === MODIFIED spinForName FUNCTION ===
-                function spinForName(name, duration) {
-                    return new Promise((resolve) => {
-                        
-                        // --- UPDATED "LOOSER" JAWN LOGIC ---
-                        const targetWord = "jawn";
-                        const distance = getLevenshteinDistance(name.toLowerCase(), targetWord);
-                        
-                        // Probabilities are now higher for all distances
-                        const probabilityMap = {
-                            0: 1.0,  // "jawn" -> 100%
-                            1: 0.95, // "john", "dawn" -> 95% (was 90%)
-                            2: 0.85, // "jack", "lawn" -> 85% (was 75%)
-                            3: 0.70, // "jason" -> 70% (was 50%)
-                            4: 0.60, // "jackson" -> 60% (was 25%)
-                            5: 0.40  // NEW: 40% (was default 10%)
-                        };
-                        
-                        // Default probability for 6+ distance is now 20%
-                        const jawnProbability = probabilityMap[distance] !== undefined ? probabilityMap[distance] : 0.20;
-                        // --- END UPDATED LOGIC ---
-                        
-                        const isJawn = Math.random() < jawnProbability;
-                        const resultString = isJawn ? 'JAWN' : 'NOT A JAWN';
-                        const percentageString = Math.round(jawnProbability * 100);
-
-                        allResults.push(`${name}: ${resultString} (${percentageString}% Jawn)`);
-
-                        // --- Force the wheel to land on the correct result ---
-                        let sliceNumber;
-                        if (isJawn) {
-                            const jawnSlices = [0, 2, 4, 6];
-                            sliceNumber = jawnSlices[Math.floor(Math.random() * jawnSlices.length)];
-                        } else {
-                            const notJawnSlices = [1, 3, 5, 7];
-                            sliceNumber = notJawnSlices[Math.floor(Math.random() * notJawnSlices.length)];
-                        }
-
-                        const centerOfSlice = sliceNumber * sliceAngle;
-                        const randomOffset = (Math.random() * (sliceAngle - 15)) - (sliceAngle / 2 - 7.5);
-                        const landAngle = centerOfSlice + randomOffset;
-                        
-                        const totalRotation = currentRotation + 7200 + landAngle; 
-
-                        wheel.style.transition = `transform ${duration / 1000}s ease-out`;
-                        wheel.style.transform = `rotate(${totalRotation}deg)`;
-
-                        setTimeout(() => {
-                            currentRotation = totalRotation % 360; 
-                            wheel.style.transition = 'none'; 
-                            wheel.style.transform = `rotate(${currentRotation}deg)`;
-                            void wheel.offsetWidth; 
-
-                            const resultLine = document.createElement('div');
-                            resultLine.className = 'result-line';
-                            
-                            const statusSpan = document.createElement('span');
-                            statusSpan.textContent = resultString;
-                            statusSpan.className = isJawn ? 'status-jawn' : 'status-not-jawn';
-                            
-                            const percentSpan = document.createElement('span');
-                            percentSpan.className = 'status-percent';
-                            percentSpan.textContent = ` (${percentageString}% Jawn)`;
-                            
-                            resultLine.textContent = `${name}: `;
-                            resultLine.appendChild(statusSpan);
-                            resultLine.appendChild(percentSpan);
-VScodeError: 
-                            resultsPlaceholder.appendChild(resultLine);
-
-                            resolve(); 
-                        }, duration);
-                    });
-                }
-
-                // === processNames FUNCTION (sets dynamic speed) ===
-                async function processNames() {
-                    allResults = [];
-                    const names = nameInput.value.split('\n')
-                                                .map(name => name.trim())
-                                                .filter(name => name.length > 0);
-
-                    if (names.length === 0) {
-                        resultTitle.textContent = 'Please enter at least one name.';
-                        resultsPlaceholder.classList.add('is-placeholder');
-                        resultsPlaceholder.textContent = 'Please enter at least one name.';
-                        isSpinning = false;
-                        spinButton.disabled = false;
-                        return;
-                    }
-
-                    // --- Dynamic speed logic (Unchanged) ---
-                    let spinDuration = 4000;
-                    let pauseDuration = 1000;
+            function spinForName(name, duration) {
+                return new Promise((resolve) => {
+                    const targetWord = "jawn";
+                    const distance = getLevenshteinDistance(name.toLowerCase(), targetWord);
+                    const probabilityMap = { 0: 1.0, 1: 0.95, 2: 0.85, 3: 0.70, 4: 0.60, 5: 0.40 };
+                    const jawnProbability = probabilityMap[distance] !== undefined ? probabilityMap[distance] : 0.20;
+                    const isJawn = Math.random() < jawnProbability;
                     
-                    if (names.length > 5) {
-                        spinDuration = 2000;
-                        pauseDuration = 500;
-                    }
-                    if (names.length > 10) {
-                        spinDuration = 1000;
-                        pauseDuration = 250;
-                    }
-                    // --- End speed logic ---
-                    
-                    for (const name of names) {
-                        await spinForName(name, spinDuration); 
-                        await new Promise(resolve => setTimeout(resolve, pauseDuration)); 
+                    recordSpinResult(isJawn);
+
+                    const resultString = isJawn ? 'JAWN' : 'NOT A JAWN';
+                    const percentageString = Math.round(jawnProbability * 100);
+
+                    allResults.push(`${name}: ${resultString} (${percentageString}% Jawn)`);
+
+                    let sliceNumber;
+                    if (isJawn) {
+                        const jawnSlices = [0, 2, 4, 6];
+                        sliceNumber = jawnSlices[Math.floor(Math.random() * jawnSlices.length)];
+                    } else {
+                        const notJawnSlices = [1, 3, 5, 7];
+                        sliceNumber = notJawnSlices[Math.floor(Math.random() * notJawnSlices.length)];
                     }
 
+                    const centerOfSlice = sliceNumber * sliceAngle;
+                    const randomOffset = (Math.random() * (sliceAngle - 15)) - (sliceAngle / 2 - 7.5);
+                    const landAngle = centerOfSlice + randomOffset;
+                    const totalRotation = currentRotation + 7200 + landAngle; 
+
+                    wheel.style.transition = `transform ${duration / 1000}s ease-out`;
+                    wheel.style.transform = `rotate(${totalRotation}deg)`;
+
+                    setTimeout(() => {
+                        currentRotation = totalRotation % 360; 
+                        wheel.style.transition = 'none'; 
+                        wheel.style.transform = `rotate(${currentRotation}deg)`;
+                        void wheel.offsetWidth; 
+
+                        const resultLine = document.createElement('div');
+                        resultLine.className = 'result-line';
+                        const statusSpan = document.createElement('span');
+                        statusSpan.textContent = resultString;
+                        statusSpan.className = isJawn ? 'status-jawn' : 'status-not-jawn';
+                        const percentSpan = document.createElement('span');
+                        percentSpan.className = 'status-percent';
+                        percentSpan.textContent = ` (${percentageString}% Jawn)`;
+                        
+                        resultLine.textContent = `${name}: `;
+                        resultLine.appendChild(statusSpan);
+                        resultLine.appendChild(percentSpan);
+                        resultsPlaceholder.appendChild(resultLine);
+
+                        resolve(); 
+                    }, duration);
+                });
+            }
+
+            async function processNames() {
+                allResults = [];
+                const names = nameInput.value.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+
+                if (names.length === 0) {
+                    resultTitle.textContent = 'Please enter at least one name.';
+                    resultsPlaceholder.classList.add('is-placeholder');
+                    resultsPlaceholder.textContent = 'Please enter at least one name.';
                     isSpinning = false;
                     spinButton.disabled = false;
-                    resultTitle.textContent = 'Results:';
-
-                    if (allResults.length > 0) {
-                        copyButton.style.display = 'flex';
-                    }
-
-                    resultsPlaceholder.classList.add('animation-complete');
-                    setTimeout(() => {
-                        resultsPlaceholder.classList.remove('animation-complete');
-                    }, 600); 
+                    return;
                 }
 
-                spinButton.addEventListener('click', function() {
-                    if (isSpinning) return;
+                let spinDuration = 4000;
+                let pauseDuration = 1000;
+                if (names.length > 5) { spinDuration = 2000; pauseDuration = 500; }
+                if (names.length > 10) { spinDuration = 1000; pauseDuration = 250; }
+                
+                for (const name of names) {
+                    await spinForName(name, spinDuration); 
+                    await new Promise(resolve => setTimeout(resolve, pauseDuration)); 
+                }
 
-                    isSpinning = true;
-                    spinButton.disabled = true;
-                    resultsPlaceholder.innerHTML = ''; 
-                    resultsPlaceholder.classList.remove('is-placeholder');
-                    resultTitle.textContent = 'Spinning...';
-                    
-                    copyButton.style.display = 'none';
-                    copyButton.classList.remove('copied');
+                isSpinning = false;
+                spinButton.disabled = false;
+                resultTitle.textContent = 'Results:';
+                if (allResults.length > 0) copyButton.style.display = 'flex';
+                resultsPlaceholder.classList.add('animation-complete');
+                setTimeout(() => { resultsPlaceholder.classList.remove('animation-complete'); }, 600); 
+            }
 
-                    processNames();
+            spinButton.addEventListener('click', function() {
+                if (isSpinning) return;
+                isSpinning = true;
+                spinButton.disabled = true;
+                resultsPlaceholder.innerHTML = ''; 
+                resultsPlaceholder.classList.remove('is-placeholder');
+                resultTitle.textContent = 'Spinning...';
+                copyButton.style.display = 'none';
+                copyButton.classList.remove('copied');
+                processNames();
+            });
+
+            copyButton.addEventListener('click', function() {
+                const textToCopy = allResults.join('\n');
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    copyButton.classList.add('copied');
+                    setTimeout(() => { copyButton.classList.remove('copied'); }, 2000);
                 });
+            });
 
-                copyButton.addEventListener('click', function() {
-                    const textToCopy = allResults.join('\n');
-                    navigator.clipboard.writeText(textToCopy).then(() => {
-                        copyButton.classList.add('copied');
-                        setTimeout(() => {
-                            copyButton.classList.remove('copied');
-                        }, 2000);
-                    }).catch(err => {
-                        console.error('Failed to copy names: ', err);
-                    });
+            const html = document.documentElement;
+            window.addEventListener('mousemove', (e) => {
+                requestAnimationFrame(() => {
+                    const xPercent = (e.clientX / window.innerWidth) - 0.5;
+                    const yPercent = (e.clientY / window.innerHeight) - 0.5;
+                    html.style.setProperty('--mouse-x-percent', xPercent);
+                    html.style.setProperty('--mouse-y-percent', yPercent);
                 });
-            })();
-
-            // --- Mouse Position Tracker (existing) ---
-            (function() {
-                const html = document.documentElement;
-                window.addEventListener('mousemove', (e) => {
-                    requestAnimationFrame(() => {
-                        const xPercent = (e.clientX / window.innerWidth) - 0.5;
-                        const yPercent = (e.clientY / window.innerHeight) - 0.5;
-                        html.style.setProperty('--mouse-x-percent', xPercent);
-                        html.style.setProperty('--mouse-y-percent', yPercent);
-                    });
-                });
-            })();
+            });
         </script>
     </body>
 </html>
