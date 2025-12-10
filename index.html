@@ -117,6 +117,8 @@
         <script type="module">
             import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
             import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+            // NEW: Import Authentication functions
+            import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
             const firebaseConfig = {
                 apiKey: "AIzaSyBESuUn74foo-ZcplfXJK5DDZOBKIOajdQ",
@@ -130,6 +132,18 @@
 
             const app = initializeApp(firebaseConfig);
             const db = getDatabase(app);
+            // NEW: Initialize Auth
+            const auth = getAuth(app);
+
+            // NEW: Automatically sign in anonymously
+            // This ensures the user has a valid auth token that satisfies "auth != null" in rules
+            signInAnonymously(auth)
+                .then(() => {
+                    console.log("Signed in anonymously");
+                })
+                .catch((error) => {
+                    console.error("Authentication failed. Use the Firebase Console to enable Anonymous Auth and add this domain to Authorized Domains.", error);
+                });
 
             let myChart = null;
 
@@ -242,6 +256,7 @@
             }
 
             function recordSpinResult(isJawn) {
+                // IMPORTANT: If auth failed, this might throw permission denied
                 const monthKey = getCurrentMonthKey();
                 const updates = [
                     ref(db, 'stats/global/spins'),
