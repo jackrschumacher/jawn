@@ -117,7 +117,6 @@
         <script type="module">
             import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
             import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
-            // NEW: Import Authentication functions
             import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
             const firebaseConfig = {
@@ -132,22 +131,18 @@
 
             const app = initializeApp(firebaseConfig);
             const db = getDatabase(app);
-            // NEW: Initialize Auth
             const auth = getAuth(app);
 
-            // NEW: Automatically sign in anonymously
-            // This ensures the user has a valid auth token that satisfies "auth != null" in rules
             signInAnonymously(auth)
                 .then(() => {
                     console.log("Signed in anonymously");
                 })
                 .catch((error) => {
-                    console.error("Authentication failed. Use the Firebase Console to enable Anonymous Auth and add this domain to Authorized Domains.", error);
+                    console.error("Authentication failed.", error);
                 });
 
             let myChart = null;
 
-            // --- Function to update chart colors dynamically ---
             function updateChartColors() {
                 if (!myChart) return;
                 
@@ -256,7 +251,6 @@
             }
 
             function recordSpinResult(isJawn) {
-                // IMPORTANT: If auth failed, this might throw permission denied
                 const monthKey = getCurrentMonthKey();
                 const updates = [
                     ref(db, 'stats/global/spins'),
@@ -276,7 +270,6 @@
                 });
             }
 
-            // Listen for Stats Changes
             onValue(ref(db, 'stats'), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -284,17 +277,14 @@
                 const global = data.global || { spins: 0, jawns: 0, notJawns: 0 };
                 const history = data.history || {};
 
-                // Update Pill
                 document.getElementById('stat-spins').textContent = (global.spins || 0).toLocaleString();
                 document.getElementById('stat-jawns').textContent = (global.jawns || 0).toLocaleString();
                 document.getElementById('stat-not-jawns').textContent = (global.notJawns || 0).toLocaleString();
 
-                // Update Modal Cards
                 document.getElementById('modal-total-spins').textContent = (global.spins || 0).toLocaleString();
                 document.getElementById('modal-total-jawns').textContent = (global.jawns || 0).toLocaleString();
                 document.getElementById('modal-total-not-jawns').textContent = (global.notJawns || 0).toLocaleString();
 
-                // Update Table
                 const tbody = document.getElementById('history-table-body');
                 tbody.innerHTML = ''; 
                 const sortedMonthsDesc = Object.keys(history).sort().reverse();
@@ -314,7 +304,6 @@
                 initChart(history);
             });
 
-            // Modal Controls
             const statsModal = document.getElementById('stats-modal');
             const statsPill = document.getElementById('global-stats-pill');
             const closeStatsBtn = document.getElementById('close-stats');
@@ -334,7 +323,6 @@
                 }
             });
 
-            // Theme Toggle
             const themeToggleButton = document.getElementById('theme-toggle');
             const htmlElement = document.documentElement;
             const currentTheme = localStorage.getItem('theme');
@@ -380,6 +368,18 @@
                 }
                 return matrix[b.length][a.length];
             }
+            
+            // --- NEW: Deterministic Hash Function ---
+            function getDeterministicScore(str) {
+                let hash = 0;
+                if (str.length === 0) return hash;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32bit integer
+                }
+                return Math.abs(hash) % 100; // Returns 0-99
+            }
 
             const wheel = document.getElementById('wheel');
             const spinButton = document.getElementById('spin-button');
@@ -396,17 +396,28 @@
 
             function spinForName(name, duration) {
                 return new Promise((resolve) => {
-                    const targetWord = "jawn";
-                    const distance = getLevenshteinDistance(name.toLowerCase(), targetWord);
-                    const probabilityMap = { 0: 1.0, 1: 0.95, 2: 0.85, 3: 0.70, 4: 0.60, 5: 0.40 };
-                    const jawnProbability = probabilityMap[distance] !== undefined ? probabilityMap[distance] : 0.20;
-                    const isJawn = Math.random() < jawnProbability;
+                    const cleanName = name.trim().toLowerCase();
                     
+                    // 1. Calculate base score from deterministic hash (Consistency)
+                    let score = getDeterministicScore(cleanName);
+                    
+                    // 2. Check for "Jawn-ness" (Similarity Boost)
+                    const targetWord = "jawn";
+                    const distance = getLevenshteinDistance(cleanName, targetWord);
+                    
+                    // If it's literally "jawn" or very close, force a high score
+                    if (distance === 0) score = 100;
+                    else if (distance === 1) score = Math.max(score, 90);
+                    else if (distance === 2) score = Math.max(score, 75);
+                    
+                    // 3. Determine Result
+                    // A score >= 50 is a Jawn. This makes the result deterministic.
+                    const isJawn = score >= 50;
+                    const percentageString = score;
+
                     recordSpinResult(isJawn);
 
                     const resultString = isJawn ? 'JAWN' : 'NOT A JAWN';
-                    const percentageString = Math.round(jawnProbability * 100);
-
                     allResults.push(`${name}: ${resultString} (${percentageString}% Jawn)`);
 
                     let sliceNumber;
