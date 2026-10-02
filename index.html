@@ -347,7 +347,22 @@
                 });
             }
 
+            // Adblockers often block Firebase requests; show a fallback instead of "..." forever
+            const statsPill = document.getElementById('global-stats-pill');
+            let statsLoaded = false;
+            function showStatsUnavailable() {
+                if (statsLoaded) return;
+                ['stat-spins', 'stat-jawns', 'stat-not-jawns'].forEach(id => {
+                    document.getElementById(id).textContent = '—';
+                });
+                statsPill.title = 'Stats unavailable. An adblocker may be blocking them.';
+            }
+            const statsTimeout = setTimeout(showStatsUnavailable, 8000);
+
             onValue(ref(db, 'stats'), (snapshot) => {
+                statsLoaded = true;
+                clearTimeout(statsTimeout);
+                statsPill.title = '';
                 const data = snapshot.val();
                 if (!data) return;
 
@@ -378,11 +393,13 @@
                     tbody.appendChild(tr);
                 });
 
-                initChart(history);
+                if (typeof Chart !== 'undefined') initChart(history);
+            }, (error) => {
+                console.error("Failed to load stats.", error);
+                showStatsUnavailable();
             });
 
             const statsModal = document.getElementById('stats-modal');
-            const statsPill = document.getElementById('global-stats-pill');
             const closeStatsBtn = document.getElementById('close-stats');
 
             statsPill.addEventListener('click', () => {
